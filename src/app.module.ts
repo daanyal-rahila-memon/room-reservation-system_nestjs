@@ -6,6 +6,8 @@ import { ApolloDriver } from '@nestjs/apollo';
 import { join } from 'path';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserModule } from './user/user.module';
+import { RoomModule } from './room/room.module';
+import { BookingModule } from './booking/booking.module';
 
 @Module({
   imports: [
@@ -29,6 +31,8 @@ import { UserModule } from './user/user.module';
       logging: true,
     }),
     UserModule,
+    RoomModule,
+    BookingModule,
   ],
   controllers: [AppController],
   providers: [AppService],

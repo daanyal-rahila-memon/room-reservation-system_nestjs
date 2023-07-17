@@ -11,25 +11,29 @@ import {
 
 @Entity()
 @ObjectType()
-export class User {
+export class Room {
   @PrimaryGeneratedColumn('uuid')
   @Field()
   id: string;
 
-  @Column()
+  @PrimaryGeneratedColumn()
   @Field()
-  name: string;
+  roomNo: number;
 
-  @Column()
-  @Field()
-  email: string;
+  @Column({ nullable: true })
+  @Field({ nullable: true })
+  type?: string;
+
+  @Column({ default: false })
+  @Field({ defaultValue: false })
+  occupied: boolean;
 
   @CreateDateColumn()
-  @Field(() => Date)
+  @Field()
   createdAt: Date;
 
   @UpdateDateColumn()
-  @Field(() => Date)
+  @Field()
   updatedAt: Date;
 
   @BeforeInsert()
@@ -45,22 +49,22 @@ export class User {
 }
 
 @InputType()
-export class AddUserInput {
-  @Field()
-  name: string;
+export class CreateRoomInput {
+  @Field({ nullable: true })
+  roomNo: number;
 
-  @Field()
-  email: string;
+  @Field({ nullable: true })
+  type: string;
 }
 
 @InputType()
-export class UpdateUserInput {
+export class UpdateRoomInput {
   @Field()
   id: string;
 
   @Field({ nullable: true })
-  name: string;
+  roomNo: number;
 
   @Field({ nullable: true })
-  email: string;
+  type: string;
 }
