@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateRoomInput, Room, UpdateRoomInput } from './entity/room.entity';
 import { Repository } from 'typeorm';
@@ -34,7 +34,11 @@ export class RoomService {
 
   async deleteRoom(id: string): Promise<Room> {
     let deletedRoom = await this.roomRepository.findOne({ where: { id: id } });
-    await this.roomRepository.delete(id);
-    return deletedRoom;
+    if (deletedRoom) {
+      await this.roomRepository.delete(id);
+      return deletedRoom;
+    } else {
+      throw new NotFoundException('Room not found');
+    }
   }
 }

@@ -5,32 +5,36 @@ import {
   Booking,
   UpdateBookingInput,
 } from './entity/booking.entity';
+import { ValidationPipe } from 'src/pipes/validation.pipe';
+import { UsePipes } from '@nestjs/common';
 
 @Resolver(() => BookingService)
 export class BookingResolver {
   constructor(private readonly bookingService: BookingService) {}
 
-  @Query(() => [Booking])
+  @Query(() => [Booking], { name: 'bookings' })
   getAllBookings() {
     return this.bookingService.getAllBookings();
   }
 
-  @Query(() => Booking)
+  @Query(() => Booking, { name: 'booking', nullable: true })
   getBookingById(@Args('bookingId') bookingId: string) {
     return this.bookingService.getBookingById(bookingId);
   }
 
   @Mutation(() => Booking)
+  @UsePipes(new ValidationPipe())
   createBooking(@Args('addBookingInput') addBookingInput: AddBookingInput) {
     return this.bookingService.createBooking(addBookingInput);
   }
 
-  @Mutation(() => Booking)
+  @Mutation(() => Booking, { nullable: true })
   deleteBooking(@Args('bookingId') bookingId: string) {
     return this.bookingService.deleteBooking(bookingId);
   }
 
-  @Mutation(() => Booking)
+  @Mutation(() => Booking, { nullable: true })
+  @UsePipes(new ValidationPipe())
   updateBooking(
     @Args('updateBookingInput') updateBookingInput: UpdateBookingInput,
   ) {

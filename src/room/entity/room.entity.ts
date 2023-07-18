@@ -16,17 +16,13 @@ export class Room {
   @Field()
   id: string;
 
-  @PrimaryGeneratedColumn()
+  @Column({ unique: true, nullable: false, generated: 'increment' })
   @Field()
   roomNo: number;
 
   @Column({ nullable: true })
   @Field({ nullable: true })
   type?: string;
-
-  @Column({ default: false })
-  @Field({ defaultValue: false })
-  occupied: boolean;
 
   @CreateDateColumn()
   @Field()
@@ -50,9 +46,6 @@ export class Room {
 
 @InputType()
 export class CreateRoomInput {
-  @Field({ nullable: true })
-  roomNo: number;
-
   @Field({ nullable: true })
   type: string;
 }

@@ -19,16 +19,25 @@ type Room {
   id: String!
   roomNo: Float!
   type: String
-  occupied: Boolean!
   createdAt: DateTime!
   updatedAt: DateTime!
+}
+
+type Booking {
+  id: String!
+  bookingDate: DateTime!
+  endDate: DateTime!
+  user: User!
+  room: Room!
 }
 
 type Query {
   users: [User!]!
   user(userId: String!): User
   rooms: [Room!]!
-  room(id: String!): Room!
+  room(roomId: String!): Room
+  bookings: [Booking!]!
+  booking(bookingId: String!): Booking
 }
 
 type Mutation {
@@ -36,8 +45,11 @@ type Mutation {
   updateUser(updateUserInput: UpdateUserInput!): User
   deleteUser(userId: String!): User
   createRoom(createRoomInput: CreateRoomInput!): Room!
-  updateRoom(updateRoomInput: UpdateRoomInput!): Room!
-  deleteRoom(id: String!): Room!
+  updateRoom(updateRoomInput: UpdateRoomInput!): Room
+  deleteRoom(roomId: String!): Room
+  createBooking(addBookingInput: AddBookingInput!): Booking!
+  deleteBooking(bookingId: String!): Booking
+  updateBooking(updateBookingInput: UpdateBookingInput!): Booking
 }
 
 input AddUserInput {
@@ -52,7 +64,6 @@ input UpdateUserInput {
 }
 
 input CreateRoomInput {
-  roomNo: Float
   type: String
 }
 
@@ -60,4 +71,19 @@ input UpdateRoomInput {
   id: String!
   roomNo: Float
   type: String
+}
+
+input AddBookingInput {
+  bookingDate: DateTime!
+  endDate: DateTime!
+  userId: String!
+  roomId: String!
+}
+
+input UpdateBookingInput {
+  id: String!
+  bookingDate: DateTime
+  endDate: DateTime
+  userId: String
+  roomId: String
 }

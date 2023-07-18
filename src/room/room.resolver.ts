@@ -11,9 +11,9 @@ export class RoomResolver {
     return this.roomService.findAllRooms();
   }
 
-  @Query(() => Room, { name: 'room' })
-  getRoomById(@Args('id') id: string) {
-    return this.roomService.findRoomById(id);
+  @Query(() => Room, { name: 'room', nullable: true })
+  getRoomById(@Args('roomId') roomId: string) {
+    return this.roomService.findRoomById(roomId);
   }
 
   @Mutation(() => Room)
@@ -24,7 +24,7 @@ export class RoomResolver {
     return this.roomService.createRoom(createRoomInput);
   }
 
-  @Mutation(() => Room)
+  @Mutation(() => Room, { nullable: true })
   updateRoom(
     @Args({ name: 'updateRoomInput', type: () => UpdateRoomInput })
     updateRoomInput: UpdateRoomInput,
@@ -32,8 +32,8 @@ export class RoomResolver {
     return this.roomService.updateRoom(updateRoomInput);
   }
 
-  @Mutation(() => Room)
-  deleteRoom(@Args('id') id: string) {
-    return this.roomService.deleteRoom(id);
+  @Mutation(() => Room, { nullable: true })
+  deleteRoom(@Args('roomId') roomId: string) {
+    return this.roomService.deleteRoom(roomId);
   }
 }

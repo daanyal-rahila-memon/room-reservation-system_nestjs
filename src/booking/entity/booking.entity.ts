@@ -24,13 +24,19 @@ export class Booking {
   @Field()
   endDate: Date;
 
+  @Column('uuid')
+  userId: string;
+
   @OneToOne(() => User)
-  @JoinColumn()
+  @JoinColumn({ name: 'userId' })
   @Field()
   user: User;
 
+  @Column('uuid')
+  roomId: string;
+
   @OneToOne(() => Room)
-  @JoinColumn()
+  @JoinColumn({ name: 'roomId' })
   @Field()
   room: Room;
 }
@@ -44,10 +50,10 @@ export class AddBookingInput {
   endDate: Date;
 
   @Field()
-  user: User;
+  userId: string;
 
   @Field()
-  room: Room;
+  roomId: string;
 }
 
 @InputType()
@@ -62,8 +68,8 @@ export class UpdateBookingInput {
   endDate: Date;
 
   @Field({ nullable: true })
-  user: User;
+  userId: string;
 
   @Field({ nullable: true })
-  room: Room;
+  roomId: string;
 }
