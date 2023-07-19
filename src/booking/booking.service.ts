@@ -10,7 +10,12 @@ import {
   Booking,
   UpdateBookingInput,
 } from './entity/booking.entity';
-import { LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
+import {
+  DeleteResult,
+  LessThanOrEqual,
+  MoreThanOrEqual,
+  Repository,
+} from 'typeorm';
 import { UserService } from 'src/user/user.service';
 import { RoomService } from 'src/room/room.service';
 import { Observable, forkJoin, from, map, of, switchMap } from 'rxjs';
@@ -26,10 +31,12 @@ export class BookingService {
     private readonly roomService: RoomService,
   ) {}
 
-  async getAllBookings(): Promise<Booking[]> {
-    return await this.bookingRepository.find({
-      relations: ['user', 'room'],
-    });
+  getAllBookings(): Observable<Booking[]> {
+    return from(
+      this.bookingRepository.find({
+        relations: ['user', 'room'],
+      }),
+    );
   }
 
   getBookingById(bookingId: string): Observable<Booking> {
@@ -43,16 +50,17 @@ export class BookingService {
     }).pipe(
       switchMap(
         ({ user, room }: { user: User; room: Room }): Observable<Booking> => {
-          return from(
-            this.bookingRepository.save(
-              this.bookingRepository.create({
-                user,
-                room,
-                bookingDate: addBookingInput.bookingDate,
-                endDate: addBookingInput.endDate,
-              }),
-            ),
-          );
+          return this.create(addBookingInput);
+          // return from(
+          //   this.bookingRepository.save(
+          //     this.bookingRepository.create({
+          //       user,
+          //       room,
+          //       bookingDate: addBookingInput.bookingDate,
+          //       endDate: addBookingInput.endDate,
+          //     }),
+          //   ),
+          // );
         },
       ),
     );
@@ -92,7 +100,7 @@ export class BookingService {
     // }
   }
 
-  public doesBookingExist(
+  public doesBookingExistWithGivenTime(
     addBookingInput: AddBookingInput,
   ): Observable<boolean> {
     return from(
@@ -107,9 +115,9 @@ export class BookingService {
   }
 
   public create(addBookingInput: AddBookingInput): Observable<Booking> {
-    return this.doesBookingExist(addBookingInput).pipe(
+    return this.doesBookingExistWithGivenTime(addBookingInput).pipe(
       switchMap((bookingExists: boolean) => {
-        if (bookingExists === true) {
+        if (bookingExists === false) {
           throw new Error('Booking already exists');
         }
         return forkJoin({
@@ -137,66 +145,120 @@ export class BookingService {
     );
   }
 
-  async deleteBooking(bookingId: string): Promise<void> {
-    await this.bookingRepository.delete(bookingId);
+  doesBookingExist(
+    updateBookingInput: UpdateBookingInput,
+  ): Observable<Booking> {
+    return from(
+      this.bookingRepository.findOne({
+        where: { id: updateBookingInput.id },
+        relations: ['user', 'room'],
+      }),
+    );
   }
 
-  async updateBooking(
-    updateBookingInput: UpdateBookingInput,
-  ): Promise<Booking> {
-    let booking = await this.bookingRepository.findOne({
-      where: { id: updateBookingInput.id },
-      relations: ['user', 'room'],
-    });
-
-    if (booking) {
-      // let user = await this.userService.getUserById(updateBookingInput.userId); // getting user details to check if the user exists or not
-      // let room = await this.roomService.findRoomById(updateBookingInput.roomId); // getting user details to check if the room exists or not
-
-      // if (room && user) {
-      const bookings = await this.bookingRepository.find({
-        // to get all the bookings of the room of provided ID & Overlapping BookingTime
-        where: {
-          roomId: updateBookingInput.roomId,
-          bookingDate: LessThanOrEqual(updateBookingInput.endDate),
-          endDate: MoreThanOrEqual(updateBookingInput.bookingDate),
+  updateBooking(updateBookingInput: UpdateBookingInput): Observable<Booking> {
+    // let booking = await this.bookingRepository.findOne({
+    //   where: { id: updateBookingInput.id },
+    //   relations: ['user', 'room'],
+    // });
+    return this.doesBookingExist(updateBookingInput).pipe(
+      switchMap((bookingExists: Booking) => {
+        if (bookingExists) {
+          return forkJoin({
+            user: updateBookingInput.userId
+              ? from(this.userService.getUserById(updateBookingInput.userId))
+              : of(bookingExists.user),
+            room: updateBookingInput.roomId
+              ? from(this.roomService.findRoomById(updateBookingInput.roomId))
+              : of(bookingExists.room),
+            booking: of(bookingExists),
+          });
+        } else {
+          throw new Error(`Booking with '${updateBookingInput.id}' not found`);
+        }
+      }),
+      switchMap(
+        ({
+          user,
+          room,
+          booking,
+        }: {
+          user: User;
+          room: Room;
+          booking: Booking;
+        }) => {
+          if (!room || !user) {
+            throw new Error('Room or User not found');
+          } else {
+            return from(
+              this.bookingRepository.save({
+                ...booking,
+                bookingDate: updateBookingInput.bookingDate
+                  ? updateBookingInput.bookingDate
+                  : booking.bookingDate,
+                endDate: updateBookingInput.endDate
+                  ? updateBookingInput.endDate
+                  : booking.endDate,
+                user: user,
+                room: room,
+              }),
+            );
+          }
         },
-      });
+      ),
+    );
+    // if (booking) {
+    //   // let user = await this.userService.getUserById(updateBookingInput.userId); // getting user details to check if the user exists or not
+    //   // let room = await this.roomService.findRoomById(updateBookingInput.roomId); // getting user details to check if the room exists or not
 
-      if (bookings.length > 0) {
-        throw new HttpException(
-          `Cannot update, Overlapping with existing Booking Timings of this room`,
-          HttpStatus.BAD_REQUEST,
-        );
-      } else {
-        let userToUpdate = updateBookingInput.userId
-          ? await this.userService.getUserById(updateBookingInput.userId)
-          : booking.user;
-        let roomToUpdate = updateBookingInput.roomId
-          ? await this.roomService.findRoomById(updateBookingInput.roomId)
-          : booking.room;
-        return await this.bookingRepository.save({
-          ...booking,
-          bookingDate: updateBookingInput.bookingDate
-            ? updateBookingInput.bookingDate
-            : booking.bookingDate,
-          endDate: updateBookingInput
-            ? updateBookingInput.endDate
-            : booking.endDate,
-          user: userToUpdate,
-          room: roomToUpdate,
-        });
-      }
-      // } else {
-      //   throw new BadRequestException(
-      //     'Room or User not found, Provide Valid details of Room & User',
-      //   );
-      // }
-    } else {
-      throw new HttpException(
-        'Booking not found, Provide Valid details of Booking',
-        HttpStatus.NOT_FOUND,
-      );
-    }
+    //   // if (room && user) {
+    //   const bookings = await this.bookingRepository.find({
+    //     // to get all the bookings of the room of provided ID & Overlapping BookingTime
+    //     where: {
+    //       roomId: updateBookingInput.roomId,
+    //       bookingDate: LessThanOrEqual(updateBookingInput.endDate),
+    //       endDate: MoreThanOrEqual(updateBookingInput.bookingDate),
+    //     },
+    //   });
+
+    //   if (bookings.length > 0) {
+    //     throw new HttpException(
+    //       `Cannot update, Overlapping with existing Booking Timings of this room`,
+    //       HttpStatus.BAD_REQUEST,
+    //     );
+    //   } else {
+    //     let userToUpdate = updateBookingInput.userId
+    //       ? await this.userService.getUserById(updateBookingInput.userId)
+    //       : booking.user;
+    //     let roomToUpdate = updateBookingInput.roomId
+    //       ? await this.roomService.findRoomById(updateBookingInput.roomId)
+    //       : booking.room;
+    //     return await this.bookingRepository.save({
+    //       ...booking,
+    //       bookingDate: updateBookingInput.bookingDate
+    //         ? updateBookingInput.bookingDate
+    //         : booking.bookingDate,
+    //       endDate: updateBookingInput
+    //         ? updateBookingInput.endDate
+    //         : booking.endDate,
+    //       user: userToUpdate,
+    //       room: roomToUpdate,
+    //     });
+    //   }
+    //   // } else {
+    //   //   throw new BadRequestException(
+    //   //     'Room or User not found, Provide Valid details of Room & User',
+    //   //   );
+    //   // }
+    // } else {
+    //   throw new HttpException(
+    //     'Booking not found, Provide Valid details of Booking',
+    //     HttpStatus.NOT_FOUND,
+    //   );
+    // }
+  }
+
+  deleteBooking(bookingId: string): Observable<DeleteResult> {
+    return from(this.bookingRepository.delete(bookingId));
   }
 }
