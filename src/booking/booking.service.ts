@@ -12,6 +12,7 @@ import {
 } from './entity/booking.entity';
 import {
   DeleteResult,
+  In,
   LessThanOrEqual,
   MoreThanOrEqual,
   Repository,
@@ -41,14 +42,26 @@ export class BookingService {
 
   getAllBookings(): Observable<Booking[]> {
     return from(
-      this.bookingRepository.find({
-        relations: ['user', 'room'],
-      }),
+      this.bookingRepository
+        .createQueryBuilder('booking')
+        .leftJoinAndSelect('booking.user', 'user')
+        .leftJoinAndSelect('booking.room', 'room')
+        .getMany(),
     );
   }
 
   getBookingById(bookingId: string): Observable<Booking> {
-    return from(this.bookingRepository.findOne({ where: { id: bookingId } }));
+    return from(
+      this.bookingRepository
+        .createQueryBuilder('booking')
+        .leftJoinAndSelect('booking.user', 'user')
+        .leftJoinAndSelect('booking.room', 'room')
+        .where('booking.id = :bId  AND room.name = :roomName', {
+          bId: bookingId,
+          roomName: 'someRoomName',
+        })
+        .getOne(),
+    );
   }
 
   createBooking(addBookingInput: AddBookingInput) {
@@ -268,7 +281,10 @@ export class BookingService {
 
   deleteBooking(bookingId: string): Observable<boolean> {
     return from(
-      this.bookingRepository.findOne({ where: { id: bookingId } }),
+      this.bookingRepository
+        .createQueryBuilder('booking')
+        .where('booking.id = :bookingId', { bookingId })
+        .getOne(),
     ).pipe(
       switchMap((booking: Booking) => {
         if (booking) {
@@ -280,5 +296,24 @@ export class BookingService {
       map(() => true),
       catchError(() => of(false)),
     );
+  }
+
+  getAllBooking(page: number, limit: number) {
+    let roomIds = ['123', '456'];
+
+    return from(
+      this.bookingRepository.find({
+        where: {
+          roomId: In(roomIds),
+        },
+        take: limit,
+        skip: limit * (page - 1),
+      }),
+    );
+    // return from(this.bookingRepository.createQueryBuilder('booking')
+    // .take(limit)
+    // .skip(limit * (page - 1))
+    // .where("booking.roomId IN(:...roomIds)", { roomIds})
+    // .getMany())
   }
 }
