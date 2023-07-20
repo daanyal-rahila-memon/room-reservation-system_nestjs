@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateRoomInput, Room, UpdateRoomInput } from './entity/room.entity';
 import { Repository } from 'typeorm';
+import { Observable, catchError, from, map, of, switchMap } from 'rxjs';
 
 @Injectable()
 export class RoomService {
@@ -9,36 +10,72 @@ export class RoomService {
     @InjectRepository(Room) private readonly roomRepository: Repository<Room>,
   ) {}
 
-  async findAllRooms(): Promise<Room[]> {
-    return await this.roomRepository.find();
+  findAllRooms(): Observable<Room[]> {
+    return from(this.roomRepository.find());
   }
 
-  async findRoomById(id: string): Promise<Room> {
-    return await this.roomRepository.findOne({ where: { id: id } });
+  findRoomById(id: string): Observable<Room> {
+    return from(this.roomRepository.findOne({ where: { id: id } }));
   }
 
-  async createRoom(createRoomInput: CreateRoomInput): Promise<Room> {
-    return await this.roomRepository.save(createRoomInput);
+  createRoom(createRoomInput: CreateRoomInput): Observable<Room> {
+    return from(this.roomRepository.save(createRoomInput));
   }
 
-  async updateRoom(updateRoomInput: UpdateRoomInput): Promise<Room> {
-    let room = await this.roomRepository.findOne({
-      where: { id: updateRoomInput.id },
-    });
-    return await this.roomRepository.save({
-      ...room,
-      type: updateRoomInput.type ? updateRoomInput.type : room.type,
-      roomNo: updateRoomInput.roomNo ? updateRoomInput.roomNo : room.roomNo,
-    });
+  doesRooomExist(updateRoomInput: UpdateRoomInput): Observable<Room> {
+    return from(
+      this.roomRepository.findOne({
+        where: { id: updateRoomInput.id },
+      }),
+    );
   }
 
-  async deleteRoom(id: string): Promise<Room> {
-    let deletedRoom = await this.roomRepository.findOne({ where: { id: id } });
-    if (deletedRoom) {
-      await this.roomRepository.delete(id);
-      return deletedRoom;
-    } else {
-      throw new NotFoundException('Room not found');
-    }
+  updateRoom(updateRoomInput: UpdateRoomInput): Observable<Room> {
+    return this.doesRooomExist(updateRoomInput).pipe(
+      switchMap((room: Room) => {
+        if (room) {
+          return from(
+            this.roomRepository.save({
+              ...room,
+              type: updateRoomInput.type ? updateRoomInput.type : room.type,
+              roomNo: updateRoomInput.roomNo
+                ? updateRoomInput.roomNo
+                : room.roomNo,
+            }),
+          );
+        } else {
+          throw new NotFoundException('Room not found');
+        }
+      }),
+    );
+    // let room = await this.roomRepository.findOne({
+    //   where: { id: updateRoomInput.id },
+    // });
+    // return await this.roomRepository.save({
+    //   ...room,
+    //   type: updateRoomInput.type ? updateRoomInput.type : room.type,
+    //   roomNo: updateRoomInput.roomNo ? updateRoomInput.roomNo : room.roomNo,
+    // });
+  }
+
+  deleteRoom(id: string): Observable<boolean> {
+    return from(this.roomRepository.findOne({ where: { id: id } })).pipe(
+      switchMap((room: Room) => {
+        if (room) {
+          return from(this.roomRepository.delete(room.id));
+        } else {
+          throw new NotFoundException('Room not found');
+        }
+      }),
+      map(() => true),
+      catchError(() => of(false)),
+    );
+    // let deletedRoom = await this.roomRepository.findOne({ where: { id: id } });
+    // if (deletedRoom) {
+    //   await this.roomRepository.delete(id);
+    //   return deletedRoom;
+    // } else {
+    //   throw new NotFoundException('Room not found');
+    // }
   }
 }

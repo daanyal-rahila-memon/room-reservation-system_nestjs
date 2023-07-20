@@ -28,7 +28,7 @@ export class BookingResolver {
     return this.bookingService.createBooking(addBookingInput);
   }
 
-  @Mutation(() => Booking, { nullable: true })
+  @Mutation(() => Boolean, { nullable: true })
   deleteBooking(@Args('bookingId') bookingId: string) {
     return this.bookingService.deleteBooking(bookingId);
   }

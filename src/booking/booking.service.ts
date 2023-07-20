@@ -18,7 +18,15 @@ import {
 } from 'typeorm';
 import { UserService } from 'src/user/user.service';
 import { RoomService } from 'src/room/room.service';
-import { Observable, forkJoin, from, map, of, switchMap } from 'rxjs';
+import {
+  Observable,
+  catchError,
+  forkJoin,
+  from,
+  map,
+  of,
+  switchMap,
+} from 'rxjs';
 import { Room } from 'src/room/entity/room.entity';
 import { User } from 'src/user/entity/user.entity';
 
@@ -258,7 +266,19 @@ export class BookingService {
     // }
   }
 
-  deleteBooking(bookingId: string): Observable<DeleteResult> {
-    return from(this.bookingRepository.delete(bookingId));
+  deleteBooking(bookingId: string): Observable<boolean> {
+    return from(
+      this.bookingRepository.findOne({ where: { id: bookingId } }),
+    ).pipe(
+      switchMap((booking: Booking) => {
+        if (booking) {
+          return from(this.bookingRepository.delete(booking.id));
+        } else {
+          throw new Error('Booking not found');
+        }
+      }),
+      map(() => true),
+      catchError(() => of(false)),
+    );
   }
 }

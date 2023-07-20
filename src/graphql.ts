@@ -83,9 +83,9 @@ export interface IMutation {
     deleteUser(userId: string): Nullable<User> | Promise<Nullable<User>>;
     createRoom(createRoomInput: CreateRoomInput): Room | Promise<Room>;
     updateRoom(updateRoomInput: UpdateRoomInput): Nullable<Room> | Promise<Nullable<Room>>;
-    deleteRoom(roomId: string): Nullable<Room> | Promise<Nullable<Room>>;
+    deleteRoom(roomId: string): Nullable<boolean> | Promise<Nullable<boolean>>;
     createBooking(addBookingInput: AddBookingInput): Booking | Promise<Booking>;
-    deleteBooking(bookingId: string): Nullable<Booking> | Promise<Nullable<Booking>>;
+    deleteBooking(bookingId: string): Nullable<boolean> | Promise<Nullable<boolean>>;
     updateBooking(updateBookingInput: UpdateBookingInput): Nullable<Booking> | Promise<Nullable<Booking>>;
 }
 

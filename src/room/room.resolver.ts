@@ -32,7 +32,7 @@ export class RoomResolver {
     return this.roomService.updateRoom(updateRoomInput);
   }
 
-  @Mutation(() => Room, { nullable: true })
+  @Mutation(() => Boolean, { nullable: true })
   deleteRoom(@Args('roomId') roomId: string) {
     return this.roomService.deleteRoom(roomId);
   }

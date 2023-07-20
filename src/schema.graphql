@@ -46,9 +46,9 @@ type Mutation {
   deleteUser(userId: String!): User
   createRoom(createRoomInput: CreateRoomInput!): Room!
   updateRoom(updateRoomInput: UpdateRoomInput!): Room
-  deleteRoom(roomId: String!): Room
+  deleteRoom(roomId: String!): Boolean
   createBooking(addBookingInput: AddBookingInput!): Booking!
-  deleteBooking(bookingId: String!): Booking
+  deleteBooking(bookingId: String!): Boolean
   updateBooking(updateBookingInput: UpdateBookingInput!): Booking
 }
 
